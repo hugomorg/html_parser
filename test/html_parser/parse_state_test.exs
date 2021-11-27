@@ -89,6 +89,24 @@ defmodule HTMLParser.ParseStateTest do
     end
   end
 
+  describe "set_char_count/2" do
+    test "adds value to char count" do
+      parse_state = %ParseState{}
+      assert parse_state.char_count == 0
+      parse_state = ParseState.set_char_count(parse_state, 2)
+      assert parse_state.char_count == 2
+    end
+  end
+
+  describe "set_newline_count/2" do
+    test "adds value to new line count" do
+      parse_state = %ParseState{}
+      assert parse_state.newline_count == 0
+      parse_state = ParseState.set_newline_count(parse_state, 2)
+      assert parse_state.newline_count == 2
+    end
+  end
+
   describe "add_close_tag/1" do
     test "stores close tag in node list and clears close tag string" do
       parse_state = %ParseState{open_tag: "div", close_tag: "div"}

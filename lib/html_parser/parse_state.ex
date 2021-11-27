@@ -9,7 +9,9 @@ defmodule HTMLParser.ParseState do
             close_tag: "",
             attrs: %{},
             tags: [],
-            tag_counter: %{}
+            tag_counter: %{},
+            char_count: 0,
+            newline_count: 0
 
   @type t :: %__MODULE__{}
 
@@ -89,6 +91,22 @@ defmodule HTMLParser.ParseState do
     parse_state = parse_state |> decrement_tag_count(close_tag)
 
     %__MODULE__{parse_state | tags: [{close_tag, tag_count} | tags], close_tag: ""}
+  end
+
+  @spec set_char_count(t(), non_neg_integer()) :: t()
+  def set_char_count(parse_state, n \\ 1)
+
+  def set_char_count(%__MODULE__{char_count: char_count} = parse_state, n)
+      when is_integer(n) and n > 0 do
+    %__MODULE__{parse_state | char_count: char_count + n}
+  end
+
+  @spec set_newline_count(t(), non_neg_integer()) :: t()
+  def set_newline_count(parse_state, n \\ 1)
+
+  def set_newline_count(%__MODULE__{newline_count: newline_count} = parse_state, n)
+      when is_integer(n) and n > 0 do
+    %__MODULE__{parse_state | newline_count: newline_count + n}
   end
 
   defp increment_tag_count(
