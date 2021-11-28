@@ -124,6 +124,18 @@ defmodule HTMLParser.ParseStateTest do
     end
   end
 
+  describe "get_tags/1" do
+    test "returns reversed list of tags" do
+      parse_state =
+        %ParseState{open_tag: "div", close_tag: "div"}
+        |> ParseState.add_open_tag()
+        |> ParseState.add_close_tag()
+
+      tags = parse_state.tags
+      assert ParseState.get_tags(parse_state) == Enum.reverse(tags)
+    end
+  end
+
   describe "add_close_tag/1" do
     test "stores close tag in node list with metadata and clears close tag string" do
       parse_state = %ParseState{open_tag: "div", close_tag: "div"}

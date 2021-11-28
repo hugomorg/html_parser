@@ -18,8 +18,7 @@ defmodule HTMLParser do
 
     parse_state
     |> do_parse(html, :init)
-    |> Map.fetch!(:tags)
-    |> Enum.reverse()
+    |> ParseState.get_tags()
     |> TreeBuilder.build()
   end
 

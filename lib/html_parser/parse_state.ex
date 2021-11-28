@@ -143,6 +143,11 @@ defmodule HTMLParser.ParseState do
     %__MODULE__{parse_state | newline_count: newline_count + n}
   end
 
+  @spec get_tags(t()) :: tags()
+  def get_tags(%__MODULE__{tags: tags}) do
+    Enum.reverse(tags)
+  end
+
   defp increment_tag_count(
          %__MODULE__{tag_counter: tag_counter} = parse_state,
          tag
