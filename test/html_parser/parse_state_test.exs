@@ -37,28 +37,39 @@ defmodule HTMLParser.ParseStateTest do
     end
   end
 
-  describe "build_attr/2" do
-    test "adds characters to attr" do
+  describe "build_attr_key/2" do
+    test "adds characters to attr_key" do
       parse_state = ParseState.new()
-      assert parse_state.attr == ""
-      parse_state = ParseState.build_attr(parse_state, <<"class=red">>)
-      assert parse_state.attr == "class=red"
+      assert parse_state.attr_key == ""
+      parse_state = ParseState.build_attr_key(parse_state, <<"class">>)
+      assert parse_state.attr_key == "class"
+    end
+  end
+
+  describe "build_attr_value/2" do
+    test "adds characters to attr_value" do
+      parse_state = ParseState.new()
+      assert parse_state.attr_value == ""
+      parse_state = ParseState.build_attr_value(parse_state, <<"red">>)
+      assert parse_state.attr_value == "red"
     end
   end
 
   describe "put_attr/1" do
     test "stores attr in attrs map and clears attr string" do
-      parse_state = %ParseState{attr: "class=red"}
+      parse_state = %ParseState{attr_key: "class", attr_value: "red"}
       parse_state = ParseState.put_attr(parse_state)
-      assert parse_state.attr == ""
+      assert parse_state.attr_key == ""
+      assert parse_state.attr_value == ""
       assert parse_state.attrs == %{"class" => "red"}
     end
 
-    test "works with equals sign inside string" do
-      parse_state = %ParseState{attr: "content=IE=edge"}
+    test "works with bool attributes" do
+      parse_state = %ParseState{attr_key: "disabled", attr_value: ""}
       parse_state = ParseState.put_attr(parse_state)
-      assert parse_state.attr == ""
-      assert parse_state.attrs == %{"content" => "IE=edge"}
+      assert parse_state.attr_key == ""
+      assert parse_state.attr_value == ""
+      assert parse_state.attrs == %{"disabled" => true}
     end
   end
 
@@ -160,6 +171,14 @@ defmodule HTMLParser.ParseStateTest do
                div: %{attrs: %{}, depth_count: 0, type: :close},
                div: %{attrs: %{}, depth_count: 0, type: :open}
              ]
+    end
+  end
+
+  describe "put_attr_quote/2" do
+    test "sets attr quote type" do
+      parse_state = ParseState.new()
+      assert parse_state.attr_quote == :double
+      assert ParseState.put_attr_quote(parse_state, :single).attr_quote == :single
     end
   end
 end

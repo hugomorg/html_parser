@@ -5,7 +5,9 @@ defmodule HTMLParser.ParseState do
 
   defstruct open_tag: "",
             text: "",
-            attr: "",
+            attr_key: "",
+            attr_value: "",
+            attr_quote: :double,
             close_tag: "",
             attrs: %{},
             tags: [],
@@ -33,7 +35,8 @@ defmodule HTMLParser.ParseState do
   @type t :: %__MODULE__{
           open_tag: String.t(),
           close_tag: String.t(),
-          attr: String.t(),
+          attr_key: String.t(),
+          attr_value: String.t(),
           text: String.t(),
           attrs: attrs(),
           tags: tags(),
@@ -63,28 +66,38 @@ defmodule HTMLParser.ParseState do
     %__MODULE__{parse_state | text: parse_state.text <> text}
   end
 
-  @spec build_attr(t(), bitstring()) :: t()
-  def build_attr(%__MODULE__{} = parse_state, attr) when is_bitstring(attr) do
-    %__MODULE__{parse_state | attr: parse_state.attr <> attr}
+  @spec build_attr_key(t(), bitstring()) :: t()
+  def build_attr_key(%__MODULE__{} = parse_state, attr_key) when is_bitstring(attr_key) do
+    %__MODULE__{parse_state | attr_key: parse_state.attr_key <> attr_key}
+  end
+
+  @spec build_attr_value(t(), bitstring()) :: t()
+  def build_attr_value(%__MODULE__{} = parse_state, attr_value) when is_bitstring(attr_value) do
+    %__MODULE__{parse_state | attr_value: parse_state.attr_value <> attr_value}
   end
 
   @spec put_attr(t()) :: t()
-  def put_attr(%__MODULE__{attr: attr, attrs: attrs} = parse_state) do
+  def put_attr(
+        %__MODULE__{attr_key: attr_key, attr_value: attr_value, attrs: attrs} = parse_state
+      ) do
     attrs =
-      case String.split(attr, "=") do
-        [key, value] ->
-          value = value |> String.trim("\"") |> String.trim("'")
-          Map.put(attrs, key, value)
-
-        [key] ->
-          Map.put(attrs, key, true)
-
-        [key | values] ->
-          value = values |> Enum.join("=") |> String.trim("\"") |> String.trim("'")
-          Map.put(attrs, key, value)
+      if attr_value == "" do
+        Map.put(attrs, attr_key, true)
+      else
+        Map.put(attrs, attr_key, attr_value)
       end
 
-    %__MODULE__{parse_state | attrs: attrs, attr: ""}
+    %__MODULE__{parse_state | attrs: attrs, attr_key: "", attr_value: ""}
+  end
+
+  @spec put_attr_quote(t(), :single | :double) :: t()
+  def put_attr_quote(%__MODULE__{} = parse_state, attr_quote) do
+    %__MODULE__{parse_state | attr_quote: attr_quote}
+  end
+
+  @spec get_attr_quote(t()) :: :single | :double
+  def get_attr_quote(%__MODULE__{attr_quote: attr_quote}) do
+    attr_quote
   end
 
   @spec add_text(t()) :: t()

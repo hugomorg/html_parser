@@ -34,6 +34,7 @@ defmodule HTMLParser do
     parse_state
     |> ParseState.set_char_count()
     |> ParseState.add_open_tag()
+    |> ParseState.add_attrs()
     |> do_parse(rest, :continue)
   end
 
@@ -41,7 +42,6 @@ defmodule HTMLParser do
   defp do_parse(parse_state, <<" ">> <> rest, :parse_open_tag) do
     parse_state
     |> ParseState.set_char_count()
-    |> ParseState.add_open_tag()
     |> do_parse(rest, :parse_attrs)
   end
 
@@ -53,29 +53,85 @@ defmodule HTMLParser do
     |> do_parse(rest, :parse_open_tag)
   end
 
+  defp do_parse(parse_state, <<">">> <> rest, :parse_attrs) do
+    parse_state
+    |> do_parse(<<">">> <> rest, :parse_open_tag)
+  end
+
+  defp do_parse(parse_state, " " <> rest, :parse_attrs) do
+    parse_state
+    |> ParseState.set_char_count()
+    |> do_parse(rest, :parse_attrs)
+  end
+
+  defp do_parse(parse_state, rest, :parse_attrs) do
+    parse_state
+    |> do_parse(rest, :build_attr_key)
+  end
+
+  defp do_parse(parse_state, <<"\"">> <> rest, :build_attr_value) do
+    if ParseState.get_attr_quote(parse_state) == :double do
+      parse_state
+      |> ParseState.set_char_count()
+      |> ParseState.put_attr()
+      |> do_parse(rest, :parse_attrs)
+    else
+      parse_state
+      |> ParseState.set_char_count()
+      |> ParseState.build_attr_value(<<"\"">>)
+      |> do_parse(rest, :build_attr_value)
+    end
+  end
+
+  defp do_parse(parse_state, <<"\'">> <> rest, :build_attr_value) do
+    if ParseState.get_attr_quote(parse_state) == :single do
+      parse_state
+      |> ParseState.set_char_count()
+      |> ParseState.put_attr()
+      |> do_parse(rest, :parse_attrs)
+    else
+      parse_state
+      |> ParseState.set_char_count()
+      |> ParseState.build_attr_value(<<"\'">>)
+      |> do_parse(rest, :build_attr_value)
+    end
+  end
+
   # Store attribute
-  defp do_parse(parse_state, <<" ">> <> rest, :parse_attrs) do
+  defp do_parse(parse_state, <<"=\"">> <> rest, :build_attr_key) do
+    parse_state
+    |> ParseState.set_char_count(2)
+    |> ParseState.put_attr_quote(:double)
+    |> do_parse(rest, :build_attr_value)
+  end
+
+  defp do_parse(parse_state, <<"=\'">> <> rest, :build_attr_key) do
+    parse_state
+    |> ParseState.set_char_count(2)
+    |> ParseState.put_attr_quote(:single)
+    |> do_parse(rest, :build_attr_value)
+  end
+
+  defp do_parse(parse_state, <<" ">> <> rest, :build_attr_key) do
     parse_state
     |> ParseState.set_char_count()
     |> ParseState.put_attr()
     |> do_parse(rest, :parse_attrs)
-  end
-
-  # Parsing attributes finished
-  defp do_parse(parse_state, <<">">> <> rest, :parse_attrs) do
-    parse_state
-    |> ParseState.set_char_count()
-    |> ParseState.put_attr()
-    |> ParseState.add_attrs()
-    |> do_parse(rest, :continue)
   end
 
   # Build attribute
-  defp do_parse(parse_state, <<attr>> <> rest, :parse_attrs) do
+  defp do_parse(parse_state, <<attr_key>> <> rest, :build_attr_key) do
     parse_state
     |> ParseState.set_char_count()
-    |> ParseState.build_attr(<<attr>>)
-    |> do_parse(rest, :parse_attrs)
+    |> ParseState.build_attr_key(<<attr_key>>)
+    |> do_parse(rest, :build_attr_key)
+  end
+
+  defp do_parse(parse_state, <<attr_value>> <> rest, :build_attr_value) do
+    parse_state
+    |> ParseState.set_char_count()
+    |> ParseState.build_attr_value(<<attr_value>>)
+    |> do_parse(rest, :build_attr_value)
   end
 
   # Text parsing finished

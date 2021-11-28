@@ -2,7 +2,7 @@ defmodule HTMLParserTest do
   use ExUnit.Case
   doctest HTMLParser
 
-  alias HTMLParser.HTMLTextNode
+  alias HTMLParser.{HTMLNodeTree, HTMLTextNode}
 
   describe "parse/1" do
     test "parses empty tag" do
@@ -119,22 +119,22 @@ defmodule HTMLParserTest do
 
       assert {:ok, tree} = HTMLParser.parse(html)
 
-      assert tree == %HTMLParser.HTMLNodeTree{
+      assert tree == %HTMLNodeTree{
                children: [
-                 %HTMLParser.HTMLNodeTree{
+                 %HTMLNodeTree{
                    children: [
-                     %HTMLParser.HTMLNodeTree{
-                       children: [%HTMLParser.HTMLNodeTree{children: [], tag: :div}],
+                     %HTMLNodeTree{
+                       children: [%HTMLNodeTree{children: [], tag: :div}],
                        tag: :div
                      }
                    ],
                    tag: :div
                  },
-                 %HTMLParser.HTMLNodeTree{
-                   children: [%HTMLParser.HTMLNodeTree{children: [], tag: :div}],
+                 %HTMLNodeTree{
+                   children: [%HTMLNodeTree{children: [], tag: :div}],
                    tag: :div
                  },
-                 %HTMLParser.HTMLNodeTree{children: [], tag: :div}
+                 %HTMLNodeTree{children: [], tag: :div}
                ],
                tag: :div
              }
@@ -142,6 +142,20 @@ defmodule HTMLParserTest do
   end
 
   describe "edge cases" do
+    test "space in attrs" do
+      html = """
+        <pre style=\"word-wrap: break-word; white-space: pre-wrap;\" double=\"sin'gle\" single='doub\"le'></pre>
+      """
+
+      assert {:ok, tree} = HTMLParser.parse(html)
+
+      assert tree.attrs == %{
+               "style" => "word-wrap: break-word; white-space: pre-wrap;",
+               "double" => "sin'gle",
+               "single" => "doub\"le"
+             }
+    end
+
     test "extra opening tag is treated as self-closing" do
       html = """
       <div>
@@ -151,14 +165,14 @@ defmodule HTMLParserTest do
       assert {:ok, tree} = HTMLParser.parse(html)
 
       assert tree == [
-               %HTMLParser.HTMLNodeTree{
+               %HTMLNodeTree{
                  attrs: %{},
                  children: [],
                  next: nil,
                  tag: :div,
                  empty: true
                },
-               %HTMLParser.HTMLNodeTree{attrs: %{}, children: [], next: nil, tag: :div}
+               %HTMLNodeTree{attrs: %{}, children: [], next: nil, tag: :div}
              ]
     end
 
