@@ -6,7 +6,7 @@ defmodule HTMLParser.HTMLNodeTree do
   alias HTMLParser.HTMLTextNode
 
   @enforce_keys [:tag]
-  defstruct [:tag, :next, children: [], attrs: %{}]
+  defstruct [:tag, :next, children: [], attrs: %{}, empty: false]
 
   @type t :: %__MODULE__{}
   @type tag :: atom()
@@ -71,6 +71,11 @@ defmodule HTMLParser.HTMLNodeTree do
   @spec add_children(t(), [t()] | HTMLTextNode.t()) :: t()
   def add_children(%__MODULE__{} = html_node_tree, children) do
     %__MODULE__{html_node_tree | children: html_node_tree.children ++ children}
+  end
+
+  @spec put_empty(t()) :: t()
+  def put_empty(%__MODULE__{} = html_node_tree) do
+    %__MODULE__{html_node_tree | empty: true}
   end
 
   @doc """

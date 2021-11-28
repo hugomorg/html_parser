@@ -63,6 +63,15 @@ defmodule HTMLParser.HTMLNodeTreeTest do
     end
   end
 
+  describe "put_empty/1" do
+    test "sets empty to true" do
+      html_node_tree = HTMLNodeTree.new(:div)
+      refute html_node_tree.empty
+      updated = HTMLNodeTree.put_empty(html_node_tree)
+      assert updated.empty
+    end
+  end
+
   describe "traverse/2" do
     test "traverses across all nodes" do
       html = """

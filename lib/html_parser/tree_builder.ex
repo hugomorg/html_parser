@@ -62,7 +62,9 @@ defmodule HTMLParser.TreeBuilder do
         tree = HTMLNodeTree.add_children(node, do_build(remaining))
         [tree] ++ do_build(siblings)
 
+      # Self-closing / empty tag
       {remaining, []} ->
+        node = HTMLNodeTree.put_empty(node)
         [node] ++ do_build(remaining)
     end
   end

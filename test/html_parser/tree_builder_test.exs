@@ -137,11 +137,11 @@ defmodule HTMLParser.TreeBuilderTest do
                  %HTMLParser.HTMLNodeTree{
                    attrs: %{"class" => "green", "id" => "1"},
                    children: [
-                     HTMLNodeTree.new(:input)
+                     %HTMLParser.HTMLNodeTree{empty: true, tag: :input}
                    ],
                    tag: :div
                  },
-                 HTMLNodeTree.new(:input),
+                 %HTMLParser.HTMLNodeTree{empty: true, tag: :input},
                  %HTMLParser.HTMLNodeTree{
                    children: [%HTMLNodeTree{tag: :h1, children: [HTMLTextNode.new("yo")]}],
                    tag: :p

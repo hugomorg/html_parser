@@ -151,7 +151,13 @@ defmodule HTMLParserTest do
       assert {:ok, tree} = HTMLParser.parse(html)
 
       assert tree == [
-               %HTMLParser.HTMLNodeTree{attrs: %{}, children: [], next: nil, tag: :div},
+               %HTMLParser.HTMLNodeTree{
+                 attrs: %{},
+                 children: [],
+                 next: nil,
+                 tag: :div,
+                 empty: true
+               },
                %HTMLParser.HTMLNodeTree{attrs: %{}, children: [], next: nil, tag: :div}
              ]
     end
