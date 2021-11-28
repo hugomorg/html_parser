@@ -140,4 +140,30 @@ defmodule HTMLParserTest do
              }
     end
   end
+
+  describe "edge cases" do
+    test "extra opening tag is treated as self-closing" do
+      html = """
+      <div>
+      <div></div>
+      """
+
+      assert {:ok, tree} = HTMLParser.parse(html)
+
+      assert tree == [
+               %HTMLParser.HTMLNodeTree{attrs: %{}, children: [], next: nil, tag: :div},
+               %HTMLParser.HTMLNodeTree{attrs: %{}, children: [], next: nil, tag: :div}
+             ]
+    end
+
+    test "extra closing tag causes error" do
+      html = """
+      <div>
+      </div>
+      </div>
+      """
+
+      assert {:error, [div: {:extra_closing_tag, 2, 15}]} = HTMLParser.parse(html)
+    end
+  end
 end

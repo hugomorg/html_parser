@@ -21,8 +21,31 @@ defmodule HTMLParser.TreeBuilder do
     end
   end
 
-  defp validate_node_list(_nodes) do
-    :ok
+  defp validate_node_list(nodes) do
+    nodes
+    |> Enum.filter(&is_tuple/1)
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+    |> Enum.reduce([], fn {tag, nodes}, acc ->
+      too_many_closing = Enum.filter(nodes, fn %{depth_count: depth_count} -> depth_count < 0 end)
+
+      case too_many_closing do
+        [] -> acc
+        [error_nodes] -> [{tag, {:extra_closing_tag, error_nodes}} | acc]
+      end
+    end)
+    |> case do
+      [] ->
+        :ok
+
+      error_nodes ->
+        errors =
+          error_nodes
+          |> Enum.map(fn {tag, {error, meta}} ->
+            {tag, {error, meta.newline_count, meta.char_count}}
+          end)
+
+        {:error, errors}
+    end
   end
 
   defp do_build([]), do: []
