@@ -106,23 +106,23 @@ defmodule HTMLParser.ParseState do
   end
 
   @spec add_open_tag(t()) :: t()
-  def add_open_tag(%__MODULE__{tags: tags, open_tag: open_tag_string} = parse_state) do
+  def add_open_tag(%__MODULE__{tags: tags, open_tag: open_tag_string, meta: meta} = parse_state) do
     open_tag = String.to_atom(open_tag_string)
     parse_state = parse_state |> increment_tag_count(open_tag)
     tag_count = get_tag_count!(parse_state, open_tag)
 
-    meta = %{depth_count: tag_count, type: :open, attrs: %{}}
+    meta = Map.merge(meta, %{depth_count: tag_count, type: :open, attrs: %{}})
 
     %__MODULE__{parse_state | tags: [{open_tag, meta} | tags], open_tag: "", meta: %{}}
   end
 
   @spec add_close_tag(t()) :: t()
-  def add_close_tag(%__MODULE__{tags: tags, close_tag: close_tag} = parse_state) do
+  def add_close_tag(%__MODULE__{tags: tags, close_tag: close_tag, meta: meta} = parse_state) do
     close_tag = String.to_atom(close_tag)
     tag_count = get_tag_count!(parse_state, close_tag)
     parse_state = parse_state |> decrement_tag_count(close_tag)
 
-    meta = %{depth_count: tag_count, type: :close, attrs: %{}}
+    meta = Map.merge(meta, %{depth_count: tag_count, type: :close, attrs: %{}})
 
     %__MODULE__{parse_state | tags: [{close_tag, meta} | tags], close_tag: "", meta: %{}}
   end
