@@ -28,6 +28,12 @@ defmodule HTMLParserTest do
       assert p.children == [%HTMLTextNode{value: "hello world"}]
     end
 
+    test "parses tag with newline in text" do
+      p = HTMLParser.parse("<p>hello\nworld</p>")
+      assert p.tag == :p
+      assert p.children == [%HTMLTextNode{value: "hello\nworld"}]
+    end
+
     test "parses tag with unicode text" do
       p = HTMLParser.parse("<p>xinh chào quý khách</p>")
       assert p.tag == :p
