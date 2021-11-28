@@ -99,12 +99,14 @@ defmodule HTMLParser do
   defp do_parse(parse_state, <<"<", "/">> <> rest, :parse_open_tag) do
     parse_state
     |> ParseState.set_char_count(2)
+    |> ParseState.add_meta()
     |> do_parse(rest, :parse_close_tag)
   end
 
   defp do_parse(parse_state, <<"<", "/">> <> rest, :continue) do
     parse_state
     |> ParseState.set_char_count(2)
+    |> ParseState.add_meta()
     |> do_parse(rest, :parse_close_tag)
   end
 
@@ -128,6 +130,7 @@ defmodule HTMLParser do
   defp do_parse(parse_state, <<"<">> <> rest, :continue) do
     parse_state
     |> ParseState.set_char_count()
+    |> ParseState.add_meta()
     |> do_parse(rest, :parse_open_tag)
   end
 

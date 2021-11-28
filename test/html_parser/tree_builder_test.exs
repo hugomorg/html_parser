@@ -4,21 +4,36 @@ defmodule HTMLParser.TreeBuilderTest do
 
   doctest TreeBuilder
 
-  defp open_tag(tag, count \\ 0, attrs \\ %{}) do
-    {tag, attrs, count}
+  defp open_tag(opts \\ []) do
+    tag(:open, opts)
   end
 
-  defp close_tag(tag, count \\ 0) do
-    {tag, count}
+  defp close_tag(opts \\ []) do
+    tag(:close, opts)
+  end
+
+  defp tag(type, opts) do
+    depth_count = Keyword.get(opts, :depth_count, 0)
+    char_count = Keyword.get(opts, :char_count, 0)
+    newline_count = Keyword.get(opts, :newline_count, 0)
+    attrs = Keyword.get(opts, :attrs, %{})
+
+    %{
+      depth_count: depth_count,
+      char_count: char_count,
+      newline_count: newline_count,
+      attrs: attrs,
+      type: type
+    }
   end
 
   describe "build/1 builds tree from parsed open and close tags" do
     test "single tag" do
-      assert TreeBuilder.build([open_tag(:div), close_tag(:div)]) == HTMLNodeTree.new(:div)
+      assert TreeBuilder.build(div: open_tag(), div: close_tag()) == HTMLNodeTree.new(:div)
     end
 
     test "single tag with text" do
-      assert TreeBuilder.build([open_tag(:div), "hi", close_tag(:div)]) == %HTMLNodeTree{
+      assert TreeBuilder.build([{:div, open_tag()}, "hi", div: close_tag()]) == %HTMLNodeTree{
                tag: :div,
                children: [
                  HTMLTextNode.new("hi")
@@ -27,25 +42,25 @@ defmodule HTMLParser.TreeBuilderTest do
     end
 
     test "single empty tag" do
-      assert TreeBuilder.build([open_tag(:meta)]) == HTMLNodeTree.new(:meta)
+      assert TreeBuilder.build(meta: open_tag()) == HTMLNodeTree.new(:meta)
     end
 
     test "single tag with different child" do
-      assert TreeBuilder.build([open_tag(:div), open_tag(:p), close_tag(:p), close_tag(:div)]) ==
+      assert TreeBuilder.build(div: open_tag(), p: open_tag(), p: close_tag(), div: close_tag()) ==
                %HTMLNodeTree{tag: :div, children: [HTMLNodeTree.new(:p)]}
     end
 
     test "single tag with same child" do
-      assert TreeBuilder.build([
-               open_tag(:div),
-               open_tag(:div, 1),
-               close_tag(:div, 1),
-               close_tag(:div)
-             ]) == %HTMLNodeTree{tag: :div, children: [HTMLNodeTree.new(:div)]}
+      assert TreeBuilder.build(
+               div: open_tag(),
+               div: open_tag(depth_count: 1),
+               div: close_tag(depth_count: 1),
+               div: close_tag()
+             ) == %HTMLNodeTree{tag: :div, children: [HTMLNodeTree.new(:div)]}
     end
 
     test "sibling tags - different" do
-      assert TreeBuilder.build([open_tag(:div), close_tag(:div), open_tag(:p), close_tag(:p)]) ==
+      assert TreeBuilder.build(div: open_tag(), div: close_tag(), p: open_tag(), p: close_tag()) ==
                [
                  HTMLNodeTree.new(:div),
                  HTMLNodeTree.new(:p)
@@ -53,30 +68,30 @@ defmodule HTMLParser.TreeBuilderTest do
     end
 
     test "single tag with empty child" do
-      assert TreeBuilder.build([open_tag(:div), open_tag(:input), close_tag(:div)]) ==
+      assert TreeBuilder.build(div: open_tag(), input: open_tag(), div: close_tag()) ==
                %HTMLNodeTree{tag: :div, children: [HTMLNodeTree.new(:input)]}
     end
 
     test "sibling tags - same" do
-      assert TreeBuilder.build([open_tag(:p), close_tag(:p), open_tag(:p), close_tag(:p)]) == [
+      assert TreeBuilder.build(p: open_tag(), p: close_tag(), p: open_tag(), p: close_tag()) == [
                HTMLNodeTree.new(:p),
                HTMLNodeTree.new(:p)
              ]
     end
 
     test "sibling empty" do
-      assert TreeBuilder.build([open_tag(:p), close_tag(:p), open_tag(:input)]) == [
+      assert TreeBuilder.build(p: open_tag(), p: close_tag(), input: open_tag()) == [
                HTMLNodeTree.new(:p),
                HTMLNodeTree.new(:input)
              ]
     end
 
     test "with attrs" do
-      assert TreeBuilder.build([
-               open_tag(:p, 0, %{"class" => "red"}),
-               close_tag(:p),
-               open_tag(:input, 0, %{"type" => "number"})
-             ]) == [
+      assert TreeBuilder.build(
+               p: open_tag(attrs: %{"class" => "red"}),
+               p: close_tag(),
+               input: open_tag(attrs: %{"type" => "number"})
+             ) == [
                %HTMLParser.HTMLNodeTree{
                  attrs: %{"class" => "red"},
                  children: [],
@@ -94,16 +109,16 @@ defmodule HTMLParser.TreeBuilderTest do
 
     test "complex example" do
       first = [
-        open_tag(:div),
-        open_tag(:div, 1, %{"class" => "green", "id" => "1"}),
-        open_tag(:input),
-        close_tag(:div, 1),
-        open_tag(:input, 1),
-        open_tag(:p),
-        open_tag(:h1)
+        div: open_tag(),
+        div: open_tag(depth_count: 1, attrs: %{"class" => "green", "id" => "1"}),
+        input: open_tag(),
+        div: close_tag(depth_count: 1),
+        input: open_tag(depth_count: 1),
+        p: open_tag(),
+        h1: open_tag()
       ]
 
-      second = [close_tag(:h1), close_tag(:p), close_tag(:div)]
+      second = [h1: close_tag(), p: close_tag(), div: close_tag()]
 
       tags = first ++ ["yo"] ++ second
 

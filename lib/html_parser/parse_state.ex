@@ -11,9 +11,37 @@ defmodule HTMLParser.ParseState do
             tags: [],
             tag_counter: %{},
             char_count: 0,
-            newline_count: 0
+            newline_count: 0,
+            meta: %{}
 
-  @type t :: %__MODULE__{}
+  @type tag :: atom()
+  @type char_count :: non_neg_integer()
+  @type depth_count :: non_neg_integer()
+  @type newline_count :: non_neg_integer()
+  @type attrs :: %{String.t() => any()}
+  @type meta ::
+          %{
+            depth_count: depth_count(),
+            char_count: char_count(),
+            newline_count: newline_count(),
+            type: :open | :close,
+            attrs: attrs()
+          }
+          | %{}
+  @type tags :: list({tag(), meta()})
+
+  @type t :: %__MODULE__{
+          open_tag: String.t(),
+          close_tag: String.t(),
+          attr: String.t(),
+          text: String.t(),
+          attrs: attrs(),
+          tags: tags(),
+          tag_counter: map(),
+          meta: meta(),
+          char_count: char_count(),
+          newline_count: newline_count()
+        }
 
   @spec new() :: t()
   def new do
@@ -65,23 +93,27 @@ defmodule HTMLParser.ParseState do
   end
 
   @spec add_attrs(t()) :: t()
-  def add_attrs(
-        %__MODULE__{attrs: attrs, tags: [{tag, current_attrs, count} | rest]} = parse_state
-      ) do
-    %__MODULE__{
-      parse_state
-      | tags: [{tag, Map.merge(current_attrs, attrs), count} | rest],
-        attrs: %{}
-    }
+  def add_attrs(%__MODULE__{attrs: attrs, tags: tags} = parse_state) do
+    [{tag, meta} | rest] = tags
+    meta = Map.update!(meta, :attrs, &Map.merge(&1, attrs))
+
+    %__MODULE__{parse_state | tags: [{tag, meta} | rest], attrs: %{}}
+  end
+
+  def add_meta(%__MODULE__{} = parse_state) do
+    meta = Map.take(parse_state, [:char_count, :newline_count, :attrs])
+    %__MODULE__{parse_state | meta: meta}
   end
 
   @spec add_open_tag(t()) :: t()
-  def add_open_tag(%__MODULE__{tags: tags, open_tag: open_tag} = parse_state) do
-    open_tag = String.to_atom(open_tag)
+  def add_open_tag(%__MODULE__{tags: tags, open_tag: open_tag_string} = parse_state) do
+    open_tag = String.to_atom(open_tag_string)
     parse_state = parse_state |> increment_tag_count(open_tag)
     tag_count = get_tag_count!(parse_state, open_tag)
 
-    %__MODULE__{parse_state | tags: [{open_tag, %{}, tag_count} | tags], open_tag: ""}
+    meta = %{depth_count: tag_count, type: :open, attrs: %{}}
+
+    %__MODULE__{parse_state | tags: [{open_tag, meta} | tags], open_tag: "", meta: %{}}
   end
 
   @spec add_close_tag(t()) :: t()
@@ -90,7 +122,9 @@ defmodule HTMLParser.ParseState do
     tag_count = get_tag_count!(parse_state, close_tag)
     parse_state = parse_state |> decrement_tag_count(close_tag)
 
-    %__MODULE__{parse_state | tags: [{close_tag, tag_count} | tags], close_tag: ""}
+    meta = %{depth_count: tag_count, type: :close, attrs: %{}}
+
+    %__MODULE__{parse_state | tags: [{close_tag, meta} | tags], close_tag: "", meta: %{}}
   end
 
   @spec set_char_count(t(), non_neg_integer()) :: t()

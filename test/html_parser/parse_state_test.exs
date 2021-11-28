@@ -72,20 +72,24 @@ defmodule HTMLParser.ParseStateTest do
   end
 
   describe "add_attrs/1" do
-    test "stores attrs in last node and clears attrs" do
-      parse_state = %ParseState{attrs: %{"id" => "1"}, tags: [{:div, %{}, 0}]}
+    test "merges attrs into meta, stores meta in last node and clears attrs" do
+      parse_state = %ParseState{
+        attrs: %{"id" => "1"},
+        tags: [div: %{attrs: %{}, depth_count: 0, type: :open}]
+      }
+
       parse_state = ParseState.add_attrs(parse_state)
       assert parse_state.attrs == %{}
-      assert parse_state.tags == [{:div, %{"id" => "1"}, 0}]
+      assert parse_state.tags == [div: %{attrs: %{"id" => "1"}, depth_count: 0, type: :open}]
     end
   end
 
   describe "add_open_tag/1" do
-    test "stores open tag in node list and clears open tag string" do
+    test "stores open tag in node list with metadata and clears open tag string" do
       parse_state = %ParseState{open_tag: "div"}
       parse_state = ParseState.add_open_tag(parse_state)
       assert parse_state.open_tag == ""
-      assert parse_state.tags == [{:div, %{}, 0}]
+      assert parse_state.tags == [div: %{attrs: %{}, depth_count: 0, type: :open}]
     end
   end
 
@@ -107,8 +111,21 @@ defmodule HTMLParser.ParseStateTest do
     end
   end
 
+  describe "add_meta/1" do
+    test "produces meta map from other properties" do
+      parse_state = ParseState.new()
+      assert parse_state.meta == %{}
+
+      assert ParseState.add_meta(parse_state).meta == %{
+               attrs: %{},
+               char_count: 0,
+               newline_count: 0
+             }
+    end
+  end
+
   describe "add_close_tag/1" do
-    test "stores close tag in node list and clears close tag string" do
+    test "stores close tag in node list with metadata and clears close tag string" do
       parse_state = %ParseState{open_tag: "div", close_tag: "div"}
 
       parse_state =
@@ -124,7 +141,13 @@ defmodule HTMLParser.ParseStateTest do
         |> ParseState.add_close_tag()
 
       assert parse_state.close_tag == ""
-      assert parse_state.tags == [{:div, 0}, {:div, %{}, 0}, {:div, 0}, {:div, %{}, 0}]
+
+      assert parse_state.tags == [
+               div: %{attrs: %{}, depth_count: 0, type: :close},
+               div: %{attrs: %{}, depth_count: 0, type: :open},
+               div: %{attrs: %{}, depth_count: 0, type: :close},
+               div: %{attrs: %{}, depth_count: 0, type: :open}
+             ]
     end
   end
 end
