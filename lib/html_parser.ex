@@ -7,7 +7,7 @@ defmodule HTMLParser do
 
   @type html :: String.t()
 
-  @spec parse(html) :: HTMLNodeTree.t() | [HTMLNodeTree.t()]
+  @spec parse(html) :: {:ok, HTMLNodeTree.t() | [HTMLNodeTree.t()]} | {:error, any()}
 
   @doc """
   Parses an HTML string and returns an Elixir representation of HTML nodes with `HTMLNodeTree`

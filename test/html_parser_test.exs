@@ -6,14 +6,15 @@ defmodule HTMLParserTest do
 
   describe "parse/1" do
     test "parses empty tag" do
-      div = HTMLParser.parse("<div></div>")
+      {:ok, div} = HTMLParser.parse("<div></div>")
 
       assert div.tag == :div
       assert div.children == []
     end
 
     test "parses attributes" do
-      button = HTMLParser.parse("<button class=\"bg-red\" disabled type='button'></button>")
+      {:ok, button} =
+        HTMLParser.parse("<button class=\"bg-red\" disabled type='button'></button>")
 
       assert button.tag == :button
       assert button.attrs["class"] == "bg-red"
@@ -23,25 +24,25 @@ defmodule HTMLParserTest do
     end
 
     test "parses tag with text" do
-      p = HTMLParser.parse("<p>hello world</p>")
+      {:ok, p} = HTMLParser.parse("<p>hello world</p>")
       assert p.tag == :p
       assert p.children == [%HTMLTextNode{value: "hello world"}]
     end
 
     test "parses tag with newline in text" do
-      p = HTMLParser.parse("<p>hello\nworld</p>")
+      {:ok, p} = HTMLParser.parse("<p>hello\nworld</p>")
       assert p.tag == :p
       assert p.children == [%HTMLTextNode{value: "hello\nworld"}]
     end
 
     test "parses tag with unicode text" do
-      p = HTMLParser.parse("<p>xinh chào quý khách</p>")
+      {:ok, p} = HTMLParser.parse("<p>xinh chào quý khách</p>")
       assert p.tag == :p
       assert p.children == [%HTMLTextNode{value: "xinh chào quý khách"}]
     end
 
     test "parses children" do
-      assert div = HTMLParser.parse("<div><p></p></div>")
+      assert {:ok, div} = HTMLParser.parse("<div><p></p></div>")
       assert div.tag == :div
 
       assert [p] = div.children
@@ -49,7 +50,7 @@ defmodule HTMLParserTest do
     end
 
     test "parses siblings" do
-      assert div = HTMLParser.parse("<div><h1></h1><p></p></div>")
+      assert {:ok, div} = HTMLParser.parse("<div><h1></h1><p></p></div>")
       assert [h1, p] = div.children
 
       assert h1.tag == :h1
@@ -57,7 +58,7 @@ defmodule HTMLParserTest do
     end
 
     test "allows no root element" do
-      assert [h1, p] = HTMLParser.parse("<h1></h1><p></p>")
+      assert {:ok, [h1, p]} = HTMLParser.parse("<h1></h1><p></p>")
 
       assert h1.tag == :h1
       assert p.tag == :p
@@ -80,7 +81,7 @@ defmodule HTMLParserTest do
         </div>
       """
 
-      assert div = HTMLParser.parse(html)
+      assert {:ok, div} = HTMLParser.parse(html)
       assert div.tag == :div
 
       assert [p, div, main] = div.children
@@ -116,7 +117,9 @@ defmodule HTMLParserTest do
         </div>
       """
 
-      assert HTMLParser.parse(html) == %HTMLParser.HTMLNodeTree{
+      assert {:ok, tree} = HTMLParser.parse(html)
+
+      assert tree == %HTMLParser.HTMLNodeTree{
                children: [
                  %HTMLParser.HTMLNodeTree{
                    children: [

@@ -78,7 +78,7 @@ defmodule HTMLParser.HTMLNodeTreeTest do
 
       {:ok, agent} = Agent.start(fn -> [] end)
 
-      parsed = HTMLParser.parse(html)
+      {:ok, parsed} = HTMLParser.parse(html)
 
       HTMLNodeTree.traverse(parsed, fn html_node_tree ->
         Agent.update(agent, &[html_node_tree | &1])
@@ -110,7 +110,7 @@ defmodule HTMLParser.HTMLNodeTreeTest do
         </div>
       """
 
-      parsed = HTMLParser.parse(html)
+      {:ok, parsed} = HTMLParser.parse(html)
 
       {div, next} = HTMLNodeTree.traverse_lazy(parsed)
       assert div.tag == :div
@@ -152,10 +152,10 @@ defmodule HTMLParser.HTMLNodeTreeTest do
         </div>
       """
 
+      {:ok, tree} = HTMLParser.parse(html)
+
       tags_or_text =
-        html
-        |> HTMLParser.parse()
-        |> Enum.map(fn
+        Enum.map(tree, fn
           %HTMLNodeTree{tag: tag} -> tag
           %HTMLTextNode{value: value} -> value
         end)

@@ -5,12 +5,24 @@ defmodule HTMLParser.TreeBuilder do
 
   alias HTMLParser.{HTMLNodeTree, HTMLTextNode, ParseState}
 
-  @spec build(ParseState.tags()) :: [HTMLNodeTree.t()] | HTMLNodeTree.t()
+  @spec build(ParseState.tags()) :: {:ok, [HTMLNodeTree.t()] | HTMLNodeTree.t()} | {:error, any()}
   def build(tags) do
-    case do_build(tags) do
-      [node] -> node
-      nodes -> nodes
+    tags
+    |> validate_node_list()
+    |> case do
+      :ok ->
+        case do_build(tags) do
+          [node] -> {:ok, node}
+          nodes -> {:ok, nodes}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
+  end
+
+  defp validate_node_list(_nodes) do
+    :ok
   end
 
   defp do_build([]), do: []
