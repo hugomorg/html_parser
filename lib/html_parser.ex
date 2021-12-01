@@ -1,6 +1,11 @@
 defmodule HTMLParser do
   @moduledoc """
   Parses an HTML string and returns an Elixir representation
+
+  ## Examples
+
+    iex> html = "<div><p>yo</p><input disabled></div>"
+    iex> {:ok, %HTMLParser.HTMLNodeTree{tag: :div}} = HTMLParser.parse(html)
   """
 
   alias HTMLParser.{HTMLNodeTree, ParseState, TreeBuilder}
