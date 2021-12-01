@@ -14,7 +14,6 @@ defmodule HTMLParser do
   """
   def parse(html) when is_binary(html) do
     parse_state = ParseState.new()
-    html = html |> String.trim()
 
     parse_state
     |> do_parse(html, :init)
@@ -22,11 +21,17 @@ defmodule HTMLParser do
     |> TreeBuilder.build()
   end
 
-  # Parse started
+  # Parse started - wait until open tag
   defp do_parse(parse_state, <<"<">> <> rest, :init) do
     parse_state
     |> ParseState.set_char_count()
     |> do_parse(rest, :parse_open_tag)
+  end
+
+  defp do_parse(parse_state, <<_>> <> rest, :init) do
+    parse_state
+    |> ParseState.set_char_count()
+    |> do_parse(rest, :init)
   end
 
   # End of open tag
@@ -38,7 +43,7 @@ defmodule HTMLParser do
     |> do_parse(rest, :continue)
   end
 
-  # Parse attributes
+  # Start parsing attributes
   defp do_parse(parse_state, <<" ">> <> rest, :parse_open_tag) do
     parse_state
     |> ParseState.set_char_count()
@@ -53,11 +58,19 @@ defmodule HTMLParser do
     |> do_parse(rest, :parse_open_tag)
   end
 
+  # Attr parsing done
+  defp do_parse(parse_state, <<"/", ">">> <> rest, :parse_attrs) do
+    parse_state
+    |> ParseState.set_char_count()
+    |> do_parse(<<">">> <> rest, :parse_open_tag)
+  end
+
   defp do_parse(parse_state, <<">">> <> rest, :parse_attrs) do
     parse_state
     |> do_parse(<<">">> <> rest, :parse_open_tag)
   end
 
+  # Ignore spaces until we find the key
   defp do_parse(parse_state, " " <> rest, :parse_attrs) do
     parse_state
     |> ParseState.set_char_count()
@@ -69,6 +82,9 @@ defmodule HTMLParser do
     |> do_parse(rest, :build_attr_key)
   end
 
+  # Handle single and double quotes
+  # If we encounter a quote while parsing a value, end parsing
+  # if it's same type, add it otherwise
   defp do_parse(parse_state, <<"\"">> <> rest, :build_attr_value) do
     if ParseState.get_attr_quote(parse_state) == :double do
       parse_state
@@ -97,7 +113,7 @@ defmodule HTMLParser do
     end
   end
 
-  # Store attribute
+  # End of attribute key and start of value
   defp do_parse(parse_state, <<"=\"">> <> rest, :build_attr_key) do
     parse_state
     |> ParseState.set_char_count(2)
@@ -112,6 +128,7 @@ defmodule HTMLParser do
     |> do_parse(rest, :build_attr_value)
   end
 
+  # No attribute value: key is self-standing (has true value)
   defp do_parse(parse_state, <<" ">> <> rest, :build_attr_key) do
     parse_state
     |> ParseState.set_char_count()
@@ -119,7 +136,13 @@ defmodule HTMLParser do
     |> do_parse(rest, :parse_attrs)
   end
 
-  # Build attribute
+  defp do_parse(parse_state, <<">">> <> rest, :build_attr_key) do
+    parse_state
+    |> ParseState.put_attr()
+    |> do_parse(<<">">> <> rest, :parse_attrs)
+  end
+
+  # Build attribute key / values
   defp do_parse(parse_state, <<attr_key>> <> rest, :build_attr_key) do
     parse_state
     |> ParseState.set_char_count()
@@ -134,12 +157,20 @@ defmodule HTMLParser do
     |> do_parse(rest, :build_attr_value)
   end
 
-  # Text parsing finished
+  # Text parsing finished - close tag encountered
   defp do_parse(parse_state, <<"<", "/">> <> rest, :parse_text) do
     parse_state
     |> ParseState.set_char_count(2)
     |> ParseState.add_text()
     |> do_parse(rest, :parse_close_tag)
+  end
+
+  # Tag found as sibling to text
+  defp do_parse(parse_state, <<"<">> <> rest, :parse_text) do
+    parse_state
+    |> ParseState.set_char_count()
+    |> ParseState.add_text()
+    |> do_parse(rest, :parse_open_tag)
   end
 
   # Build text
@@ -189,13 +220,7 @@ defmodule HTMLParser do
     |> do_parse(rest, :parse_open_tag)
   end
 
-  # Ignore whitespace characters before text
-  defp do_parse(parse_state, <<" ">> <> rest, :continue) do
-    parse_state
-    |> ParseState.set_char_count()
-    |> do_parse(rest, :continue)
-  end
-
+  # Ignore newline characters
   defp do_parse(parse_state, <<"\n">> <> rest, :continue) do
     parse_state
     |> ParseState.set_char_count()

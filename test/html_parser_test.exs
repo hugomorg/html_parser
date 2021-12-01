@@ -5,11 +5,24 @@ defmodule HTMLParserTest do
   alias HTMLParser.{HTMLNodeTree, HTMLTextNode}
 
   describe "parse/1" do
-    test "parses empty tag" do
+    test "parses tag with no children" do
       {:ok, div} = HTMLParser.parse("<div></div>")
 
       assert div.tag == :div
       assert div.children == []
+      refute div.empty
+    end
+
+    test "parses empty tag" do
+      {:ok, div} = HTMLParser.parse("<div />")
+      assert div.tag == :div
+      assert div.children == []
+      assert div.empty
+
+      {:ok, div} = HTMLParser.parse("<div>")
+      assert div.tag == :div
+      assert div.children == []
+      assert div.empty
     end
 
     test "parses attributes" do
@@ -142,9 +155,36 @@ defmodule HTMLParserTest do
   end
 
   describe "edge cases" do
+    test "new node after text" do
+      html = """
+      <div>
+        <h1>\nSome text\n<span>Hi</span>
+        </h1>
+      </div>
+      """
+
+      assert {:ok, tree} = HTMLParser.parse(html)
+
+      assert tree == %HTMLParser.HTMLNodeTree{
+               children: [
+                 %HTMLParser.HTMLNodeTree{
+                   children: [
+                     %HTMLParser.HTMLTextNode{value: "Some text"},
+                     %HTMLParser.HTMLNodeTree{
+                       children: [%HTMLParser.HTMLTextNode{value: "Hi"}],
+                       tag: :span
+                     }
+                   ],
+                   tag: :h1
+                 }
+               ],
+               tag: :div
+             }
+    end
+
     test "space in attrs" do
       html = """
-        <pre style=\"word-wrap: break-word; white-space: pre-wrap;\" double=\"sin'gle\" single='doub\"le'></pre>
+        <pre style=\"word-wrap: break-word; white-space: pre-wrap;\" double=\"sin'gle\" single='doub\"le' hug_end>
       """
 
       assert {:ok, tree} = HTMLParser.parse(html)
@@ -152,8 +192,19 @@ defmodule HTMLParserTest do
       assert tree.attrs == %{
                "style" => "word-wrap: break-word; white-space: pre-wrap;",
                "double" => "sin'gle",
-               "single" => "doub\"le"
+               "single" => "doub\"le",
+               "hug_end" => true
              }
+    end
+
+    test "attr next to self-closing slash" do
+      html = """
+        <code key="value" />
+      """
+
+      assert {:ok, tree} = HTMLParser.parse(html)
+
+      assert tree.attrs == %{"key" => "value"}
     end
 
     test "extra opening tag is treated as self-closing" do
@@ -184,6 +235,22 @@ defmodule HTMLParserTest do
       """
 
       assert {:error, [div: {:extra_closing_tag, 2, 15}]} = HTMLParser.parse(html)
+    end
+
+    test "doesn't clear opening and closing blanks" do
+      html = """
+      <p>
+         hi \ \ \
+      </p>
+      """
+
+      assert {:ok, tree} = HTMLParser.parse(html)
+
+      assert tree == %HTMLParser.HTMLNodeTree{
+               attrs: %{},
+               children: [%HTMLParser.HTMLTextNode{value: "   hi   "}],
+               tag: :p
+             }
     end
   end
 end

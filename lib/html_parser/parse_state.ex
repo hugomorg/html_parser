@@ -102,7 +102,11 @@ defmodule HTMLParser.ParseState do
 
   @spec add_text(t()) :: t()
   def add_text(%__MODULE__{tags: tags, text: text} = parse_state) do
-    %__MODULE__{parse_state | tags: [text | tags], text: ""}
+    if String.trim(text) == "" do
+      %__MODULE__{parse_state | text: ""}
+    else
+      %__MODULE__{parse_state | tags: [String.trim(text, "\n") | tags], text: ""}
+    end
   end
 
   @spec add_attrs(t()) :: t()
