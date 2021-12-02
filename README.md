@@ -23,11 +23,6 @@ defmodule YourModule do
 end
 ```
 
-## TODO
-
-- Handle comments
-- Ignore `DOCTYPE`
-
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
