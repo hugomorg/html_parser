@@ -26,6 +26,27 @@ defmodule HTMLParser do
     |> TreeBuilder.build()
   end
 
+  # Comment parsing
+  defp do_parse(parse_state, <<"<!--">> <> rest, _state) do
+    parse_state
+    |> ParseState.set_char_count(4)
+    |> do_parse(rest, :parse_comment)
+  end
+
+  defp do_parse(parse_state, <<"-->">> <> rest, :parse_comment) do
+    parse_state
+    |> ParseState.set_char_count(3)
+    |> ParseState.add_comment()
+    |> do_parse(rest, :continue)
+  end
+
+  defp do_parse(parse_state, <<comment>> <> rest, :parse_comment) do
+    parse_state
+    |> ParseState.set_char_count()
+    |> ParseState.build_comment(<<comment>>)
+    |> do_parse(rest, :parse_comment)
+  end
+
   # Parse started - wait until open tag
   defp do_parse(parse_state, <<"<">> <> rest, :init) do
     parse_state

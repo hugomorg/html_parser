@@ -154,6 +154,18 @@ defmodule HTMLParserTest do
     end
   end
 
+  describe "handles comments" do
+    html = """
+    <html>
+      <!-- I'm a comment! -->
+    </html>
+    """
+
+    assert {:ok, tree} = HTMLParser.parse(html)
+
+    assert tree.children == [%HTMLParser.HTMLCommentNode{next: nil, value: "I'm a comment!"}]
+  end
+
   describe "edge cases" do
     test "new node after text" do
       html = """

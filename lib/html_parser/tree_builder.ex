@@ -3,7 +3,7 @@ defmodule HTMLParser.TreeBuilder do
   Builds an HTML node tree from a parsed list of tags with depth counts.
   """
 
-  alias HTMLParser.{HTMLNodeTree, HTMLTextNode, ParseState}
+  alias HTMLParser.{HTMLCommentNode, HTMLNodeTree, HTMLTextNode, ParseState}
 
   @spec build(ParseState.tags()) :: {:ok, [HTMLNodeTree.t()] | HTMLNodeTree.t()} | {:error, any()}
   def build(tags) do
@@ -23,6 +23,7 @@ defmodule HTMLParser.TreeBuilder do
 
   defp validate_node_list(nodes) do
     nodes
+    |> Enum.reject(&match?({:comment, _comment}, &1))
     |> Enum.filter(&is_tuple/1)
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
     |> Enum.reduce([], fn {tag, nodes}, acc ->
@@ -60,6 +61,10 @@ defmodule HTMLParser.TreeBuilder do
 
   defp do_build([{:"!doctype", _} | elements]) do
     do_build(elements)
+  end
+
+  defp do_build([{:comment, element} | elements]) do
+    [HTMLCommentNode.new(element) | do_build(elements)]
   end
 
   defp do_build([{tag, %{attrs: attrs, depth_count: depth_count}} | elements]) do

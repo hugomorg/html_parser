@@ -37,6 +37,15 @@ defmodule HTMLParser.ParseStateTest do
     end
   end
 
+  describe "build_comment/2" do
+    test "adds characters to comment" do
+      parse_state = ParseState.new()
+      assert parse_state.comment == ""
+      parse_state = ParseState.build_comment(parse_state, <<"yo">>)
+      assert parse_state.comment == "yo"
+    end
+  end
+
   describe "build_attr_key/2" do
     test "adds characters to attr_key" do
       parse_state = ParseState.new()
@@ -79,6 +88,15 @@ defmodule HTMLParser.ParseStateTest do
       parse_state = ParseState.add_text(parse_state)
       assert parse_state.text == ""
       assert parse_state.tags == ["yo"]
+    end
+  end
+
+  describe "add_comment/1" do
+    test "stores comment in node list and clears comment string" do
+      parse_state = %ParseState{comment: "yo"}
+      parse_state = ParseState.add_comment(parse_state)
+      assert parse_state.comment == ""
+      assert parse_state.tags == [comment: "yo"]
     end
   end
 

@@ -5,6 +5,7 @@ defmodule HTMLParser.ParseState do
 
   defstruct open_tag: "",
             text: "",
+            comment: "",
             attr_key: "",
             attr_value: "",
             attr_quote: :double,
@@ -38,6 +39,7 @@ defmodule HTMLParser.ParseState do
           attr_key: String.t(),
           attr_value: String.t(),
           text: String.t(),
+          comment: String.t(),
           attrs: attrs(),
           tags: tags(),
           tag_counter: map(),
@@ -64,6 +66,11 @@ defmodule HTMLParser.ParseState do
   @spec build_text(t(), bitstring()) :: t()
   def build_text(%__MODULE__{} = parse_state, text) when is_bitstring(text) do
     %__MODULE__{parse_state | text: parse_state.text <> text}
+  end
+
+  @spec build_comment(t(), bitstring()) :: t()
+  def build_comment(%__MODULE__{} = parse_state, comment) when is_bitstring(comment) do
+    %__MODULE__{parse_state | comment: parse_state.comment <> comment}
   end
 
   @spec build_attr_key(t(), bitstring()) :: t()
@@ -106,6 +113,15 @@ defmodule HTMLParser.ParseState do
       %__MODULE__{parse_state | text: ""}
     else
       %__MODULE__{parse_state | tags: [String.trim(text, "\n") | tags], text: ""}
+    end
+  end
+
+  @spec add_comment(t()) :: t()
+  def add_comment(%__MODULE__{tags: tags, comment: comment} = parse_state) do
+    if String.trim(comment) == "" do
+      %__MODULE__{parse_state | comment: ""}
+    else
+      %__MODULE__{parse_state | tags: [{:comment, String.trim(comment)} | tags], comment: ""}
     end
   end
 
