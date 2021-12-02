@@ -24,6 +24,7 @@ defmodule HTMLParser.TreeBuilder do
   defp validate_node_list(nodes) do
     nodes
     |> Enum.reject(&match?({:comment, _comment}, &1))
+    |> Enum.reject(&match?({:text, _comment}, &1))
     |> Enum.filter(&is_tuple/1)
     |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
     |> Enum.reduce([], fn {tag, nodes}, acc ->
@@ -51,10 +52,6 @@ defmodule HTMLParser.TreeBuilder do
 
   defp do_build([]), do: []
 
-  defp do_build([element | elements]) when is_binary(element) do
-    [HTMLTextNode.new(element) | do_build(elements)]
-  end
-
   defp do_build([{:"!DOCTYPE", _} | elements]) do
     do_build(elements)
   end
@@ -65,6 +62,10 @@ defmodule HTMLParser.TreeBuilder do
 
   defp do_build([{:comment, element} | elements]) do
     [HTMLCommentNode.new(element) | do_build(elements)]
+  end
+
+  defp do_build([{:text, element} | elements]) do
+    [HTMLTextNode.new(element) | do_build(elements)]
   end
 
   defp do_build([{tag, %{attrs: attrs, depth_count: depth_count}} | elements]) do

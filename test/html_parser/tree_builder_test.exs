@@ -116,19 +116,19 @@ defmodule HTMLParser.TreeBuilderTest do
     end
 
     test "complex example" do
-      first = [
+      tags = [
         div: open_tag(),
         div: open_tag(depth_count: 1, attrs: %{"class" => "green", "id" => "1"}),
         input: open_tag(),
         div: close_tag(depth_count: 1),
         input: open_tag(depth_count: 1),
         p: open_tag(),
-        h1: open_tag()
+        h1: open_tag(),
+        text: "yo",
+        h1: close_tag(),
+        p: close_tag(),
+        div: close_tag()
       ]
-
-      second = [h1: close_tag(), p: close_tag(), div: close_tag()]
-
-      tags = first ++ ["yo"] ++ second
 
       {:ok, tree} = TreeBuilder.build(tags)
 

@@ -87,7 +87,7 @@ defmodule HTMLParser.ParseStateTest do
       parse_state = %ParseState{text: "yo"}
       parse_state = ParseState.add_text(parse_state)
       assert parse_state.text == ""
-      assert parse_state.tags == ["yo"]
+      assert parse_state.tags == [text: "yo"]
     end
   end
 
