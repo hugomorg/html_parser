@@ -54,6 +54,14 @@ defmodule HTMLParser.TreeBuilder do
     [HTMLTextNode.new(element) | do_build(elements)]
   end
 
+  defp do_build([{:"!DOCTYPE", _} | elements]) do
+    do_build(elements)
+  end
+
+  defp do_build([{:"!doctype", _} | elements]) do
+    do_build(elements)
+  end
+
   defp do_build([{tag, %{attrs: attrs, depth_count: depth_count}} | elements]) do
     node = tag |> HTMLNodeTree.new() |> HTMLNodeTree.put_attrs(attrs)
 

@@ -252,5 +252,20 @@ defmodule HTMLParserTest do
                tag: :p
              }
     end
+
+    test "ignores doctype" do
+      html = """
+      <!DOCTYPE html>
+      <html>
+      </html>
+      """
+
+      assert {:ok, tree} = HTMLParser.parse(html)
+
+      assert tree == %HTMLParser.HTMLNodeTree{
+               children: [],
+               tag: :html
+             }
+    end
   end
 end
